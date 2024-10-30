@@ -26,8 +26,8 @@ public class App {
         while (true) {
             System.out.println("\nMain Menu:");
             System.out.println("1. Load a CSV file into the database");
-            System.out.println("2. View data");
-            System.out.println("3. Manipulate data");
+            System.out.println("2. View data You loaded");
+            System.out.println("3. Manipulate data that is loaded");
             System.out.println("4. Exit");
             System.out.print("Select an option (1-4): ");
             
@@ -53,34 +53,35 @@ public class App {
     }
 
     private static void loadCSVIntoDatabase() throws SQLException {
+        
+        if (sqliteManager != null) {
+            sqliteManager.close(); 
+        }
+
         System.out.println("Please choose which dataset you would like to load");
         System.out.println("1. IMDB Dataset");
         System.out.println("2. Top Spotify Streamed Songs");
         System.out.println("3. Books of the Decade");
 
         int fileChoice = getValidIntegerInput(1, 3);
-        String csvFilePath = getCSVFilePath(fileChoice);
+        String csvFileName = getCSVFilePath(fileChoice);
 
         System.out.println("Great choice! Now please provide a name for the database to load data:");
         String dbName = scanner.nextLine().trim();
         
         sqliteManager = new SQLiteManager("jdbc:sqlite:" + dbName + ".db");
         sqliteManager.connect(); 
-
+        sqliteManager.loadData(csvFileName);
         System.out.println("Data loaded successfully into " + dbName + ".db");
     }
 
     private static String getCSVFilePath(int fileChoice) {
         switch (fileChoice) {
-            case 1: return "../../resources/imdb.csv";
-            case 2: return "../../resources/spotify.csv";
-            case 3: return "../../resources/reviews.csv";
+            case 1: return "imdb.csv";
+            case 2: return "spotify.csv";
+            case 3: return "reviews.csv";
             default: return null; 
         }
-    }
-
-    private static void loadDataFromCSV(String csvFilePath) {
-
     }
 
     private static void viewData() {

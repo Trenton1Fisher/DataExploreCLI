@@ -19,6 +19,7 @@ dependencies {
     // Use JUnit test framework.
     testImplementation(libs.junit)
     implementation("org.xerial:sqlite-jdbc:3.42.0.0") // Ensure you use the latest version.
+    implementation("org.apache.commons:commons-csv:1.5")
 
 
 
