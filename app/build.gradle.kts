@@ -18,9 +18,17 @@ repositories {
 dependencies {
     // Use JUnit test framework.
     testImplementation(libs.junit)
+    implementation("org.xerial:sqlite-jdbc:3.42.0.0") // Ensure you use the latest version.
+
+
 
     // This dependency is used by the application.
     implementation(libs.guava)
+}
+
+//Don't remove this addition, allows the task ./gradlew run to have stdin for user input
+tasks.named<JavaExec>("run") {
+    standardInput = System.`in`
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
