@@ -25,9 +25,9 @@ public class App {
     private static void runApp() throws SQLException {
         while (true) {
             System.out.println("\nMain Menu:");
-            System.out.println("1. Load a CSV file into the database");
+            System.out.println("1. Load a new CSV file into the database");
             System.out.println("2. View data You loaded");
-            System.out.println("3. Manipulate data that is loaded");
+            System.out.println("3. Run your own SQLite query");
             System.out.println("4. Exit");
             System.out.print("Select an option (1-4): ");
             
@@ -53,7 +53,7 @@ public class App {
     }
 
     private static void loadCSVIntoDatabase() throws SQLException {
-        
+
         if (sqliteManager != null) {
             sqliteManager.close(); 
         }
@@ -71,7 +71,7 @@ public class App {
         
         sqliteManager = new SQLiteManager("jdbc:sqlite:" + dbName + ".db");
         sqliteManager.connect(); 
-        sqliteManager.loadData(csvFileName);
+        sqliteManager.loadData(csvFileName, fileChoice);
         System.out.println("Data loaded successfully into " + dbName + ".db");
     }
 
@@ -79,7 +79,7 @@ public class App {
         switch (fileChoice) {
             case 1: return "imdb.csv";
             case 2: return "spotify.csv";
-            case 3: return "reviews.csv";
+            case 3: return "books.csv";
             default: return null; 
         }
     }

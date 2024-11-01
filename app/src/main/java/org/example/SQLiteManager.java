@@ -40,7 +40,7 @@ public class SQLiteManager {
         }
     }
 
-    public void loadData(String fileName) {
+    public void loadData(String fileName, int tableName) {
         try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream(fileName);
              InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
              CSVParser csvParser = new CSVParser(inputStreamReader, CSVFormat.DEFAULT.withFirstRecordAsHeader())) {
@@ -49,9 +49,53 @@ public class SQLiteManager {
                 throw new FileNotFoundException("File not found: " + fileName);
             }
 
-           // csvParser.forEach(record -> System.out.println(record));
-            System.out.println(csvParser.getHeaderMap());
-        } catch (IOException e) {
+           var headerMap = csvParser.getHeaderMap();
+           StringBuilder createTableSQL = new StringBuilder("CREATE TABLE IF NOT EXISTS generic (");
+
+           int i = 0;
+            for(String header: headerMap.keySet()){
+                switch (i) {
+                    case 0:
+                        createTableSQL.append(header + " TEXT PRIMARY KEY");
+                        break;
+                    default:
+                        createTableSQL.append(", " + header + " TEXT");
+                        break;
+                }
+                i++;
+            }
+            createTableSQL.append(");");
+            System.out.println(createTableSQL);
+            Statement statement = this.connection.createStatement();
+            statement.execute(createTableSQL.toString());
+
+            StringBuilder insertDataSQL = new StringBuilder("INSERT INTO generic ");
+
+            int j = 0;
+            insertDataSQL.append("(");
+            for(String header: headerMap.keySet()) {
+                switch (j) {
+                    case 0:
+                        insertDataSQL.append(header);
+                        break;
+                    default:
+                        insertDataSQL.append(", " + header);
+                        break;
+                }
+                j++;
+            }
+            insertDataSQL.append(") VALUES");
+            for(CSVRecord record: csvParser){
+                insertDataSQL.append("(");
+                for(String header: headerMap.keySet()){
+                    insertDataSQL.append("'" + record.get(header)+ "', ");
+                }
+                insertDataSQL.append("),");
+            }
+            insertDataSQL.append(");");
+            System.out.println(insertDataSQL);
+
+        } catch (IOException | SQLException e) {
             e.printStackTrace();
         }
     }
