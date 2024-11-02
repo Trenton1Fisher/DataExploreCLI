@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -50,50 +51,57 @@ public class SQLiteManager {
             }
 
            var headerMap = csvParser.getHeaderMap();
-           StringBuilder createTableSQL = new StringBuilder("CREATE TABLE IF NOT EXISTS generic (");
+           StringBuilder createTableSQL = new StringBuilder("CREATE TABLE IF NOT EXISTS placeholder (");
+           StringBuilder insertDataSQL = new StringBuilder("INSERT INTO placeholder (");
 
            int i = 0;
             for(String header: headerMap.keySet()){
                 switch (i) {
                     case 0:
                         createTableSQL.append(header + " TEXT PRIMARY KEY");
+                        insertDataSQL.append(header);
                         break;
                     default:
                         createTableSQL.append(", " + header + " TEXT");
+                        insertDataSQL.append(", " + header);
                         break;
                 }
                 i++;
             }
+
             createTableSQL.append(");");
-            System.out.println(createTableSQL);
             Statement statement = this.connection.createStatement();
             statement.execute(createTableSQL.toString());
 
-            StringBuilder insertDataSQL = new StringBuilder("INSERT INTO generic ");
 
-            int j = 0;
-            insertDataSQL.append("(");
-            for(String header: headerMap.keySet()) {
-                switch (j) {
-                    case 0:
-                        insertDataSQL.append(header);
-                        break;
-                    default:
-                        insertDataSQL.append(", " + header);
-                        break;
+            insertDataSQL.append(") VALUES (");
+
+            for (int k = 0; k < headerMap.size(); k++) {
+                if (k > 0) {
+                    insertDataSQL.append(", ");
                 }
-                j++;
+                insertDataSQL.append("?");
             }
-            insertDataSQL.append(") VALUES");
+            insertDataSQL.append(")");
+
+            PreparedStatement preparedStatement = this.connection.prepareStatement(insertDataSQL.toString());
+            connection.setAutoCommit(false);
+
             for(CSVRecord record: csvParser){
-                insertDataSQL.append("(");
-                for(String header: headerMap.keySet()){
-                    insertDataSQL.append("'" + record.get(header)+ "', ");
+                int headerIndex = 1;
+                for (String header : headerMap.keySet()) {
+                   String temp = record.get(header);
+                   preparedStatement.setString(headerIndex, temp);
+                   headerIndex++;
                 }
-                insertDataSQL.append("),");
+                preparedStatement.addBatch();
             }
-            insertDataSQL.append(");");
-            System.out.println(insertDataSQL);
+
+            int[] rows = preparedStatement.executeBatch();
+            connection.commit();
+
+            System.out.println(rows.length + " rows loaded into your database!"); 
+
 
         } catch (IOException | SQLException e) {
             e.printStackTrace();
@@ -108,16 +116,47 @@ public class SQLiteManager {
         }
     }
 
-    public ResultSet executeQuery(String sql) {
+    public void executeQuery(String sql) {
         ResultSet resultSet = null;
+        Statement stmt = null;
+
+        System.out.println("");
+        
         try {
-            Statement stmt = connection.createStatement();
+            stmt = connection.createStatement();
             resultSet = stmt.executeQuery(sql);
+    
+            int columnCount = resultSet.getMetaData().getColumnCount();
+
+            for (int i = 1; i <= columnCount; i++) {
+                System.out.printf("%-20s", resultSet.getMetaData().getColumnName(i));
+            }
+            System.out.println();
+    
+            for (int i = 0; i < columnCount; i++) {
+                System.out.print("--------------------");
+            }
+            System.out.println(); 
+    
+            while (resultSet.next()) {
+                for (int i = 1; i <= columnCount; i++) {
+                    String value = resultSet.getString(i);
+                    System.out.printf("%-20s", value); 
+                }
+                System.out.println();
+            }
         } catch (SQLException e) {
-            System.out.println(e.getMessage());
+            System.err.println("SQL Exception: " + e.getMessage());
+        } finally {
+            try {
+                if (resultSet != null) resultSet.close();
+                if (stmt != null) stmt.close();
+            } catch (SQLException e) {
+                System.err.println("Failed to close resources: " + e.getMessage());
+            }
         }
-        return resultSet;
     }
+    
 
     public void close() {
         try {
